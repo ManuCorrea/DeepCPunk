@@ -2,6 +2,7 @@ __pycache__/
 
 .ipynb_checkpoints
 
+APIkeys.py
 datasets/
 samples/
 tw_imgs/
