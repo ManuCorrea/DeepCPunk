@@ -104,7 +104,7 @@ for epoch in range(102, n_epochs + 1):
         modelo.print_losses()
         for num, batch in enumerate(test_loader_x):
             img, _ = batch
-            modelo.set_input_test(scale(batch[0]))
+            modelo.set_input_A(scale(batch[0]))
             modelo.forward_test()
 
             save_image(modelo.fake_B, num, epoch, './samples/512/', 'B')

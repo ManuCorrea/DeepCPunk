@@ -3,14 +3,13 @@ from torch.nn import init
 import torch.nn as nn
 import functools
 import random
-
 import itertools
+
 
 class cycle_gan():
 
-    def __init__(self, training=True):
-        self.device = 'cuda'
-        use_dropout = False
+    def __init__(self, device, training=True, use_dropout=False):
+        self.device = device
         self.netG_A = init_net(ResnetGenerator(3, 3, 8, use_dropout=use_dropout, n_blocks=9), init_type='xavier').to(self.device)
 
         self.netG_B = init_net(ResnetGenerator(3, 3, 8, use_dropout=use_dropout, n_blocks=9), init_type='xavier').to(self.device)
@@ -39,24 +38,18 @@ class cycle_gan():
                                             lr=0.0002, betas=(beta1, 0.999))
 
     def set_input(self, A, B):
-        """Unpack input data from the dataloader and perform necessary pre-processing steps.
-
-        Parameters:
-            input (dict): include the data itself and its metadata information.
-
-        The option 'direction' can be used to swap domain A and domain B.
         """
-
+        Set the data on which the network will do training process
+        :param A: data A
+        :param B: data B
+        """
         self.real_A = A.to(self.device)
         self.real_B = B.to(self.device)
 
-    def set_input_test(self, A):
-        """Unpack input data from the dataloader and perform necessary pre-processing steps.
-
-        Parameters:
-            input (dict): include the data itself and its metadata information.
+    def set_input_A(self, A):
         """
-
+        :param A: A data to do forward pass
+        """
         self.real_A = A.to(self.device)
 
     def forward(self):
@@ -67,10 +60,13 @@ class cycle_gan():
         self.rec_B = self.netG_A(self.fake_A)   # G_A(G_B(B))
 
     def forward_test(self):
-        """Run forward pass; called by both functions <optimize_parameters> and <test>."""
-        self.fake_B = self.netG_A(self.real_A)  # G_A(A)
+        """Run forward pass."""
+        self.fake_B = self.netG_A(self.real_A)
         self.fake_A = self.netG_B(self.fake_B)
 
+    def forward_GA(self): # Used for model deploy
+        """Run forward pass."""
+        self.fake_B = self.netG_A(self.real_A)
 
     def backward_D_basic(self, netD, real, fake):
         """Calculate GAN loss for the discriminator
@@ -173,25 +169,41 @@ class cycle_gan():
         self.optimizer_D.step()  # update D_A and D_B's weights
 
     def load_weights(self, dir, epoch):
+        """
+        Load Generators weights
+        :param dir: directory where weights are
+        :param epoch: epoch of the saved weight
+        """
         self.netG_A.load_state_dict(torch.load(dir + 'generatorA-{}.pkl'.format(epoch)))
-        self.netG_B.load_state_dict(torch.load(dir + 'generatorB-{}.pkl'.format(epoch)))
         if self.training:
+            self.netG_B.load_state_dict(torch.load(dir + 'generatorB-{}.pkl'.format(epoch)))
             self.netD_A.load_state_dict(torch.load(dir + 'discriminatorA-{}.pkl'.format(epoch)))
             self.netD_B.load_state_dict(torch.load(dir + 'discriminatorB-{}.pkl'.format(epoch)))
 
     def save_weights(self, dir, epoch):
+        """
+        Saves all networks weights
+        :param dir: directory
+        :param epoch: epoch of the training process
+        """
         torch.save(self.netG_A.state_dict(), dir + 'generatorA-{}.pkl'.format(epoch))
         torch.save(self.netG_B.state_dict(), dir + 'generatorB-{}.pkl'.format(epoch))
         torch.save(self.netD_A.state_dict(), dir + 'discriminatorA-{}.pkl'.format(epoch))
         torch.save(self.netD_B.state_dict(), dir + 'discriminatorB-{}.pkl'.format(epoch))
 
     def print_losses(self):
-        # TODO print just the values, not as Tensor
-        print('Generator losses: ', self.loss_G)
-        print('Discriminator losses', self.loss_D_A, self.loss_D_B)
+        """
+        Prints losses of the nets
+        """
+        print('Generator losses: ', self.loss_G.item())
+        print('Discriminator A loss: ', self.loss_D_A.item(), ' discriminador B loss: ', self.loss_D_B.item())
 
     def get_losses(self):
-        return self.loss_G, self.loss_D_A, self.loss_D_B
+        """
+        Returns losses for tracking purpose
+        :return: Generators loss, DA loss, DB loss
+        """
+        return self.loss_G.item(), self.loss_D_A.item(), self.loss_D_B.item()
 
 
 class ImagePool():
