@@ -2,25 +2,36 @@ import cv2
 import numpy as np
 import CycleGan
 from torchvision.transforms import ToTensor, Resize
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-dir', type=str,
+                    help='weight directory')
+parser.add_argument('-e', '--epoch', type=int, help='epoch of the generated weights')
+parser.add_argument('-d', default='cpu', type=str, help='device for the network')
+
+args = vars(parser.parse_args())
+print(args)
+
 
 def process_image(img_tensor):
     img = img_tensor.squeeze(0)
     img = img.detach().cpu().numpy()
-    # rgb bgr
     img = ((img + 1) * 255 / (2)).astype(np.uint8)
     img = img.transpose(1, 2, 0)
     return img
 
-dir_weights = './model_weights/512_nueva_red/'
 
-model = CycleGan.cycle_gan(training=False)
-model.load_weights(dir_weights, 424)
+dir_weights = args['dir']
+
+model = CycleGan.cycle_gan(training=False, device=args['d'])
+model.load_weights(dir_weights, args['epoch'])
 
 cap = cv2.VideoCapture(0)
 r = Resize((1024, 720))
 transformacion = ToTensor()
 
-while(True):
+while True:
     # Capture frame-by-frame
     ret, frame = cap.read()
 
@@ -31,13 +42,13 @@ while(True):
     frame = frame.unsqueeze(0)
     frame = frame.to('cpu')
 
-    model.set_input_test(frame)
+    model.set_input_A(frame)
     model.forward_test()
 
     imagen = process_image(model.fake_B)
 
     # Display the resulting frame
-    cv2.imshow('frame',imagen)
+    cv2.imshow('frame', imagen)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
