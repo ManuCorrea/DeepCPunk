@@ -21,6 +21,20 @@ def process_image(img_tensor):
     img = img.transpose(1, 2, 0)
     return img
 
+# resize and keep ratio
+def resize_k_r(img, long_size):
+    width, height = img.size
+    ratio = width/height
+    if width > height:
+        if width < long_size:  # If the image is smaller don't resize
+            return img
+        print(long_size, int(long_size/ratio))
+        return img.resize((long_size, int(long_size/ratio)))
+    else:
+        if height < long_size:
+            return img
+        print(int(ratio*long_size), long_size)
+        return img.resize((int(ratio*long_size), long_size))
 
 transformation = ToTensor()
 
@@ -57,9 +71,7 @@ for tweet in mentions:
                 url = media[0]['media_url']
                 response = requests.get(url)
                 img = Image.open(BytesIO(response.content))
-                # TODO respect img's aspect ratio
-                img = img.resize((1024, 720))
-                img.save('./tw_imgs/a.png')
+                img = resize_k_r(img, 1024)
                 img = transformation(img)
                 img = img.unsqueeze(0)
                 # Forward pass of the image
