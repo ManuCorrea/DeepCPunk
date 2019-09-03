@@ -7,6 +7,7 @@ from CycleGan import cycle_gan
 
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 import datetime
 import time
@@ -20,13 +21,13 @@ parser.add_argument('-bs', default=5, type=int,
 parser.add_argument('--resume_training', default=False, type=bool,
                     help='resume training with previous saved weights')
 
-parser.add_argument('-e', '--epoch', type=int,
+parser.add_argument('-e', '--epoch', type=int, default=10,
                     help='Number of epochs')
 
-parser.add_argument('-EpResTr', default=2, type=int,
+parser.add_argument('--EpResTr', default=0, type=int,
                     help='Epoch number saved weight for training')
 
-parser.add_argument('-dir', default='./model_weights/512_nueva_red/', type=str,
+parser.add_argument('--dir', default='./model_weights/512_nueva_red/', type=str,
                     help='directory of weights')
 
 parser.add_argument('--each', type=int, default=4,
@@ -45,7 +46,6 @@ RESUME_TRAINING = args['resume_training']
 transform = transforms.Compose([transforms.RandomCrop(600, pad_if_needed=True),
                                 transforms.Resize(512),
                                 transforms.RandomHorizontalFlip(),
-                                #transforms.Resize((720, 1024)),
                                 transforms.ToTensor()])
 
 transform_test = transforms.Compose([transforms.Resize((720, 1024)),
@@ -71,9 +71,11 @@ test_loader_y = DataLoader(dataset=test_y, batch_size=1, shuffle=False)
 
 
 def scale(x, feature_range=(-1, 1)):
-    ''' Scale takes in an image x and returns that image, scaled
-       with a feature_range of pixel values from -1 to 1.
-       This function assumes that the input x is already scaled from 0-1.'''
+    """
+    Scale takes in an image x and returns that image, scaled
+    with a feature_range of pixel values from -1 to 1.
+    This function assumes that the input x is already scaled from 0-1.
+    """
 
     # scale from 0-1 to feature_range
     min, max = feature_range
@@ -98,12 +100,19 @@ if RESUME_TRAINING:
     modelo.load_weights(dir_weights, args['EpResTr'])
 
 # number of epochs to train the model
-n_epochs = args['e']
+n_epochs = args['epoch']
 
 started = datetime.datetime.now()
 print('Started at:', started)
 
-for epoch in range(102, n_epochs + 1):
+loss_G_epoch = []
+loss_DA_epoch = []
+loss_DB_epoch = []
+loss_G_epochs= []
+loss_DA_epochs = []
+loss_DB_epochs = []
+
+for epoch in range(args['EpResTr'], n_epochs + 1):
     start_time = time.time()
     print('EPOCH NUM:', epoch)
 
@@ -112,15 +121,24 @@ for epoch in range(102, n_epochs + 1):
         modelo.set_input(scale(data_x[0]), scale(data_y[0]))
         modelo.optimize_parameters()
 
-        # TODO monitor training losses properly
-        # loss_G, loss_D_A, loss_D_B = modelo.get_losses()
+        loss_G, loss_DA, loss_DB = modelo.get_losses()
+        loss_G_epoch.append(loss_G)
+        loss_DA_epoch.append(loss_DA)
+        loss_DB_epoch.append(loss_DB)
+        break
+
+    loss_G_epochs.append(sum(loss_G_epoch)/len(loss_G_epoch))
+    loss_DA_epochs.append(sum(loss_DA_epoch)/len(loss_DA_epoch))
+    loss_DB_epochs.append(sum(loss_DB_epoch)/len(loss_DB_epoch))
+    loss_G_epoch = []
+    loss_DA_epoch = []
+    loss_DB_epoch = []
 
     time_elapsed = time.time() - start_time
     print('Epoch {} took {:.2f} seconds ({:.2f} minutes)'.format(epoch, time_elapsed, time_elapsed/60))
 
     # testing
     if epoch % args['each'] == 0:
-        modelo.print_losses()
         for num, batch in enumerate(test_loader_x):
             img, _ = batch
             modelo.set_input_A(scale(batch[0]))
@@ -133,3 +151,12 @@ for epoch in range(102, n_epochs + 1):
 
 print('Started at:', started)
 print('Finished at ', datetime.datetime.now())
+
+plt.plot(loss_G_epochs, label='Generator losses')
+plt.plot(loss_DA_epochs, label='Discriminator A losses')
+plt.plot(loss_DB_epochs, label='Discriminator B losses')
+plt.xlabel('Epochs')
+plt.ylabel('Loss value')
+plt.title('Training losses')
+plt.legend()
+plt.show()
