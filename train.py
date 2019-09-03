@@ -3,23 +3,43 @@ from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 
-
 from CycleGan import cycle_gan
 
 import numpy as np
-
 import cv2
 
 import datetime
 import time
+import argparse
 
+
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('-bs', default=5, type=int,
+                    help='Batch Size for training')
+
+parser.add_argument('--resume_training', default=False, type=bool,
+                    help='resume training with previous saved weights')
+
+parser.add_argument('-e', '--epoch', type=int,
+                    help='Number of epochs')
+
+parser.add_argument('-EpResTr', default=2, type=int,
+                    help='Epoch number saved weight for training')
+
+parser.add_argument('-dir', default='./model_weights/512_nueva_red/', type=str,
+                    help='directory of weights')
+
+parser.add_argument('--each', type=int, default=4,
+                    help='Number of epochs to test and save.')
+
+args = vars(parser.parse_args())
+print(args)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-device = 'cuda'
 print('###################  ', device, '    ################')
 
-BATCH_SIZE = 5
-RESUME_TRAINING = False
+BATCH_SIZE = args['bs']
+RESUME_TRAINING = args['resume_training']
 
 
 transform = transforms.Compose([transforms.RandomCrop(600, pad_if_needed=True),
@@ -70,15 +90,15 @@ def save_image(img_tensor, img_num, epoch, direc, fake):
     cv2.imwrite(direc + '/' + fake + '-num-{}epoch-{}.png'.format(img_num, epoch), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
 
 
-dir_weights = './model_weights/512_nueva_red/'
+dir_weights = args['dir']
 
-modelo = cycle_gan()
+modelo = cycle_gan(device)
 
 if RESUME_TRAINING:
-    modelo.load_weights(dir_weights, 200)
+    modelo.load_weights(dir_weights, args['EpResTr'])
 
 # number of epochs to train the model
-n_epochs = 2000
+n_epochs = args['e']
 
 started = datetime.datetime.now()
 print('Started at:', started)
@@ -89,7 +109,6 @@ for epoch in range(102, n_epochs + 1):
 
     # Training
     for data_x, data_y in zip(train_loader_x, train_loader_y):
-        
         modelo.set_input(scale(data_x[0]), scale(data_y[0]))
         modelo.optimize_parameters()
 
@@ -100,7 +119,7 @@ for epoch in range(102, n_epochs + 1):
     print('Epoch {} took {:.2f} seconds ({:.2f} minutes)'.format(epoch, time_elapsed, time_elapsed/60))
 
     # testing
-    if epoch % 2 == 0:
+    if epoch % args['each'] == 0:
         modelo.print_losses()
         for num, batch in enumerate(test_loader_x):
             img, _ = batch
