@@ -7,38 +7,14 @@ from PIL import Image
 import requests
 from io import BytesIO
 
-import numpy as np
 import cv2
+from img_proc import process_image, resize_k_r
 
 HASHTAG = 'DeepCPunk'  # Hashtag needed to process info
 
-
-def process_image(img_tensor):
-    img = img_tensor.squeeze(0)
-    img = img.detach().cpu().numpy()
-    # rgb bgr
-    img = ((img + 1) * 255 / 2).astype(np.uint8)
-    img = img.transpose(1, 2, 0)
-    return img
-
-# resize and keep ratio
-def resize_k_r(img, long_size):
-    width, height = img.size
-    ratio = width/height
-    if width > height:
-        if width < long_size:  # If the image is smaller don't resize
-            return img
-        print(long_size, int(long_size/ratio))
-        return img.resize((long_size, int(long_size/ratio)))
-    else:
-        if height < long_size:
-            return img
-        print(int(ratio*long_size), long_size)
-        return img.resize((int(ratio*long_size), long_size))
-
 transformation = ToTensor()
 
-model = cycle_gan(training=False)
+model = cycle_gan(training=False, device='cuda')
 dir_weights = './model_weights/512_nueva_red/'
 model.load_weights(dir_weights, 200)
 
@@ -75,7 +51,7 @@ for tweet in mentions:
                 img = transformation(img)
                 img = img.unsqueeze(0)
                 # Forward pass of the image
-                model.set_input_test(img)
+                model.set_input_A(img)
                 model.forward_test()
 
                 # Save the image

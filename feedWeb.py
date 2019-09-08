@@ -1,8 +1,8 @@
 import cv2
-import numpy as np
 import CycleGan
 from torchvision.transforms import ToTensor, Resize
 import argparse
+from img_proc import process_image
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-dir', type=str,
@@ -12,15 +12,6 @@ parser.add_argument('-d', default='cpu', type=str, help='device for the network'
 
 args = vars(parser.parse_args())
 print(args)
-
-
-def process_image(img_tensor):
-    img = img_tensor.squeeze(0)
-    img = img.detach().cpu().numpy()
-    img = ((img + 1) * 255 / (2)).astype(np.uint8)
-    img = img.transpose(1, 2, 0)
-    return img
-
 
 dir_weights = args['dir']
 

@@ -5,13 +5,12 @@ from torchvision.datasets import ImageFolder
 
 from CycleGan import cycle_gan
 
-import numpy as np
-import cv2
 import matplotlib.pyplot as plt
 
 import datetime
 import time
 import argparse
+from img_proc import scale, save_image_tr
 
 
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -70,28 +69,6 @@ train_loader_y = DataLoader(dataset=train_y, batch_size=BATCH_SIZE, shuffle=True
 test_loader_y = DataLoader(dataset=test_y, batch_size=1, shuffle=False)
 
 
-def scale(x, feature_range=(-1, 1)):
-    """
-    Scale takes in an image x and returns that image, scaled
-    with a feature_range of pixel values from -1 to 1.
-    This function assumes that the input x is already scaled from 0-1.
-    """
-
-    # scale from 0-1 to feature_range
-    min, max = feature_range
-    x = x * (max - min) + min
-    return x
-
-
-def save_image(img_tensor, img_num, epoch, direc, fake):
-    img = img_tensor.squeeze(0)
-    img = img.detach().cpu().numpy()
-    # rgb bgr
-    img = ((img + 1) * 255 / (2)).astype(np.uint8)
-    img = img.transpose(1, 2, 0)
-    cv2.imwrite(direc + '/' + fake + '-num-{}epoch-{}.png'.format(img_num, epoch), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
-
-
 dir_weights = args['dir']
 
 modelo = cycle_gan(device)
@@ -108,7 +85,7 @@ print('Started at:', started)
 loss_G_epoch = []
 loss_DA_epoch = []
 loss_DB_epoch = []
-loss_G_epochs= []
+loss_G_epochs = []
 loss_DA_epochs = []
 loss_DB_epochs = []
 
@@ -125,7 +102,6 @@ for epoch in range(args['EpResTr'], n_epochs + 1):
         loss_G_epoch.append(loss_G)
         loss_DA_epoch.append(loss_DA)
         loss_DB_epoch.append(loss_DB)
-        break
 
     loss_G_epochs.append(sum(loss_G_epoch)/len(loss_G_epoch))
     loss_DA_epochs.append(sum(loss_DA_epoch)/len(loss_DA_epoch))
@@ -144,8 +120,8 @@ for epoch in range(args['EpResTr'], n_epochs + 1):
             modelo.set_input_A(scale(batch[0]))
             modelo.forward_test()
 
-            save_image(modelo.fake_B, num, epoch, './samples/512/', 'B')
-            save_image(modelo.fake_A, num, epoch, './samples/512/', 'A')
+            save_image_tr(modelo.fake_B, num, epoch, './samples/last/', 'B')
+            save_image_tr(modelo.fake_A, num, epoch, './samples/last/', 'A')
 
         modelo.save_weights(dir_weights, epoch)
 
