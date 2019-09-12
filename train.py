@@ -26,8 +26,11 @@ parser.add_argument('-e', '--epoch', type=int, default=10,
 parser.add_argument('--EpResTr', default=0, type=int,
                     help='Epoch number saved weight for training')
 
-parser.add_argument('--dir', default='./model_weights/512_nueva_red/', type=str,
+parser.add_argument('--dir', default='./model_weights/', type=str,
                     help='directory of weights')
+
+parser.add_argument('--test_dir', default='./samples/', type=str,
+                    help='directory for saving tests')
 
 parser.add_argument('--each', type=int, default=4,
                     help='Number of epochs to test and save.')
@@ -42,20 +45,21 @@ BATCH_SIZE = args['bs']
 RESUME_TRAINING = args['resume_training']
 
 
-transform = transforms.Compose([transforms.RandomCrop(600, pad_if_needed=True),
+transform = transforms.Compose([transforms.RandomCrop(580, pad_if_needed=True),
                                 transforms.Resize(512),
                                 transforms.RandomHorizontalFlip(),
                                 transforms.ToTensor()])
 
-transform_test = transforms.Compose([transforms.Resize((720, 1024)),
+transform_test = transforms.Compose([transforms.Resize(720),
                                     transforms.ToTensor()])
 
 # transform_test = transforms.Compose([transforms.ToTensor()])
+data_folder = './datasets/'
 
-image_path_train_x = './datasets/City/'
-image_path_train_y = './datasets/CP/'
-image_path_test_x = './datasets/test_{}/'.format('City')
-image_path_test_y = './datasets/test_{}/'.format('CP')
+image_path_train_x = data_folder + 'City/City/'
+image_path_train_y = data_folder + 'CP/CP/'
+image_path_test_x = data_folder + 'test_{}/'.format('City')
+image_path_test_y = data_folder + 'test_{}/'.format('CP')
 
 train_x = ImageFolder(image_path_train_x, transform)
 train_y = ImageFolder(image_path_train_y, transform)
@@ -82,6 +86,7 @@ n_epochs = args['epoch']
 started = datetime.datetime.now()
 print('Started at:', started)
 
+# Arrays to keep track of loss during training
 loss_G_epoch = []
 loss_DA_epoch = []
 loss_DB_epoch = []
@@ -120,8 +125,8 @@ for epoch in range(args['EpResTr'], n_epochs + 1):
             modelo.set_input_A(scale(batch[0]))
             modelo.forward_test()
 
-            save_image_tr(modelo.fake_B, num, epoch, './samples/last/', 'B')
-            save_image_tr(modelo.fake_A, num, epoch, './samples/last/', 'A')
+            save_image_tr(modelo.fake_B, num, epoch, args['test_dir'], 'B')
+            save_image_tr(modelo.fake_A, num, epoch, args['test_dir'], 'A')
 
         modelo.save_weights(dir_weights, epoch)
 

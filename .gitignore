@@ -3,6 +3,9 @@ __pycache__/
 .ipynb_checkpoints
 
 APIkeys.py
-datasets/
-samples/
+datasets/City
+datasets/CP
+datasets/test_City
+datasets/test_CP
+samples/*
 tw_imgs/
