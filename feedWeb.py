@@ -5,9 +5,9 @@ import argparse
 from img_proc import process_image
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-dir', type=str,
+parser.add_argument('-dir', type=str, default='./model_weights/',
                     help='weight directory')
-parser.add_argument('-e', '--epoch', type=int, help='epoch of the generated weights')
+parser.add_argument('-e', '--epoch', default=100,type=int, help='epoch of the generated weights')
 parser.add_argument('-d', default='cpu', type=str, help='device for the network')
 
 args = vars(parser.parse_args())

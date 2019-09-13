@@ -7,5 +7,5 @@ datasets/City
 datasets/CP
 datasets/test_City
 datasets/test_CP
-samples/*
+samples/*.png
 tw_imgs/
