@@ -2,3 +2,5 @@ opencv_python==3.4.3.18
 torchvision==0.2.1
 torch==0.4.1
 numpy==1.14.5
+tqdm
+matplotlib
