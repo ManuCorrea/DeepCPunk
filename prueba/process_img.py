@@ -20,11 +20,11 @@ test_loader_x = DataLoader(dataset=test_x, batch_size=1, shuffle=False)
 model = cycle_gan(training=False, device='cpu')  # Si tienes cuda cambiar 'cpu' -> 'cuda'
 dir_weights = '../model_weights/'
 # pesos disponibles para probar 60, 84, 100, 256, 280
-model.load_weights(dir_weights, 40)
+model.load_weights(dir_weights, 60)
 
 for num, batch in enumerate(test_loader_x):
     img, _ = batch
     model.set_input_A(scale(batch[0]))
-    model.forward_test()
+    model.forward_AB()
 
     save_image_tr(model.fake_B, num, 0, './', 'B')
