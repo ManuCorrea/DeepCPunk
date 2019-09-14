@@ -34,7 +34,7 @@ while True:
     frame = frame.to('cpu')
 
     model.set_input_A(frame)
-    model.forward_test()
+    model.forward_AB()
 
     imagen = process_image(model.fake_B)
 

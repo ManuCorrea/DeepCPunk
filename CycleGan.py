@@ -12,30 +12,31 @@ class cycle_gan():
         self.device = device
         self.netG_A = init_net(ResnetGenerator(3, 3, 8, use_dropout=use_dropout, n_blocks=9), init_type='xavier').to(self.device)
 
-        self.netG_B = init_net(ResnetGenerator(3, 3, 8, use_dropout=use_dropout, n_blocks=9), init_type='xavier').to(self.device)
-
         ndf = 64
 
         beta1 = 0.5
         self.training = training
         if training:
+            self.netG_B = init_net(ResnetGenerator(3, 3, 8, use_dropout=use_dropout, n_blocks=9),
+                                   init_type='xavier').to(self.device)
             self.netD_A = init_net(NLayerDiscriminator(3, ndf, n_layers=3).to(self.device))
             self.netD_B = init_net(NLayerDiscriminator(3, ndf, n_layers=3).to(self.device))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(), self.netD_B.parameters()),
                                                 lr=0.0002, betas=(beta1, 0.999))
+            pool_size = 50
+            self.fake_A_pool = ImagePool(pool_size)  # create image buffer to store previously generated images
+            self.fake_B_pool = ImagePool(pool_size)  # create image buffer to store previously generated images
+            # define loss functions
+            self.criterionGAN = GANLoss('lsgan').to(self.device)  # define GAN loss.
+            self.criterionCycle = torch.nn.L1Loss()
+            self.criterionIdt = torch.nn.L1Loss()
+            # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
 
-        pool_size = 50
-        self.fake_A_pool = ImagePool(pool_size)  # create image buffer to store previously generated images
-        self.fake_B_pool = ImagePool(pool_size)  # create image buffer to store previously generated images
-        # define loss functions
-        self.criterionGAN = GANLoss('lsgan').to(self.device)  # define GAN loss.
-        self.criterionCycle = torch.nn.L1Loss()
-        self.criterionIdt = torch.nn.L1Loss()
-        # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
+            # https://discuss.pytorch.org/t/what-does-chain-in-itertools-do/1817
+            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
+                                                lr=0.0002, betas=(beta1, 0.999))
 
-        # https://discuss.pytorch.org/t/what-does-chain-in-itertools-do/1817
-        self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
-                                            lr=0.0002, betas=(beta1, 0.999))
+
 
     def set_input(self, A, B):
         """
@@ -63,6 +64,10 @@ class cycle_gan():
         """Run forward pass."""
         self.fake_B = self.netG_A(self.real_A)
         self.fake_A = self.netG_B(self.fake_B)
+
+    def forward_AB(self):
+        """Run forward pass."""
+        self.fake_B = self.netG_A(self.real_A)
 
     def forward_GA(self): # Used for model deploy
         """Run forward pass."""

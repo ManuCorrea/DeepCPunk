@@ -64,4 +64,5 @@ def save_image_tr(img_tensor, img_num, epoch, direc, A_B):
     img = ((img + 1) * 255 / 2).astype(np.uint8)
     img = img.transpose(1, 2, 0)
     cv2.imwrite(direc + '/' + A_B + '-num-{}epoch-{}.png'.format(img_num, epoch), cv2.cvtColor(img, cv2.COLOR_RGB2BGR))
+    # img.save(direc + '/' + A_B + '-num-{}epoch-{}.png'.format(img_num, epoch))
 

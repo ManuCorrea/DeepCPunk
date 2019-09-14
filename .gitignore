@@ -9,3 +9,7 @@ datasets/test_City
 datasets/test_CP
 samples/*.png
 tw_imgs/
+video/*.avi
+video/*.mkv
+video/*.webm
+prueba/input_imgs/*.png
